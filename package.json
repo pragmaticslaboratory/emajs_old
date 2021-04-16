@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "nodeunit": "^0.11.3"
+  }
+}
