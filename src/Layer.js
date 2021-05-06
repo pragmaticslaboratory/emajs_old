@@ -124,16 +124,9 @@ function Layer(adap) {
 
     this.enableCondition = function() { //todo: when a condition is added, Should it check its predicate?
         let thiz = this;
-        this._cond.on(function (active) {
+        this._cond.on(function(active) {
             if (active !== thiz._active) {
                 thiz._active = active;
-                if (thiz._active) {
-                    thiz._enter();
-                    thiz._installVariations();
-                } else {
-                    thiz._exit();
-                    thiz._uninstallVariations();
-                }
             }
         });
     };
@@ -146,6 +139,7 @@ function Layer(adap) {
         this._cond.addSignal(signal);
     };
 
+    //this._cond = adapt.condition || emptyFunction;
     this._cond = adap.condition === undefined ?
         new SignalComp("false") : typeof (adap.condition) === "string" ?
             new SignalComp(adap.condition) : adap.condition; //it should be already a signal composition
