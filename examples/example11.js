@@ -1,7 +1,9 @@
 let {Signal, Adaptation, EMA, show} = require("../loader");
+const { activate } = require("../src/RAI");
 
 let screen = {
     gyroscope: new Signal(0),
+    touched: new Signal(false),
     rotate: function () {
         show("Rotating");
     }
@@ -32,8 +34,9 @@ let Landscape = {
         return !(funName === "display" && obj === videoGame);
     }
 };
+EMA.deploy(Landscape);
 
-PortraitCondition = "gyroLevel < 45"
+PortraitCondition = "gyroLevel <= 45"
 let Portrait = {
     condition:  PortraitCondition,
     enter: function () {
@@ -44,6 +47,7 @@ let Portrait = {
         return !(funName === "display" && obj === videoGame);
     }
 };
+EMA.deploy(Portrait)
 
 FixedCondition = "fixed"
 let KeepOrientation = {
@@ -55,10 +59,12 @@ let KeepOrientation = {
         return !(funName === "display" && obj === videoGame);
     }
 }
+EMA.deploy(KeepOrientation);
 
 BetweenRange = ["gyroLevel > 45", "gyroLevel < 135"]
 
 EMA.exhibit(screen, {gyroLevel: screen.gyroscope});
+EMA.exhibit(screen, {fixed: screen.touched});
 
 EMA.addPartialMethod(Landscape, playerView, "display",
     function () {
@@ -88,6 +94,13 @@ EMA.addPartialMethod(Portrait, videoGame, "display",
     }
 );
 
+EMA.addPartialMethod(KeepOrientation, playerView, "display",
+    function () {
+        show("[LAYER] Nothing is moved");
+        Adaptation.proceed();
+    }
+);
+
 EMA.addPartialMethod(KeepOrientation, videoGame, "display",
     function () {
         show("[LAYER] Nothing is moved");
@@ -95,19 +108,23 @@ EMA.addPartialMethod(KeepOrientation, videoGame, "display",
     }
 );
 
-EMA.deploy(Landscape);
-EMA.deploy(Portrait);
-EMA.deploy(KeepOrientation);
+
+//Running the example
 playerView.display();
 
 show("\nChange SmartPhone position");
 screen.gyroscope.value = 60;
+EMA.activate(LandscapeCondition);
 playerView.display();
 videoGame.display();
 screen.gyroscope.value = 10;
 playerView.display();
 videoGame.display();
-//activate(FixedCondition, playerView)
+EMA.activate(EMA.unique(FixedCondition), playerView)
+screen.touched.value = true;
 screen.gyroscope.value = 60;
 playerView.display();
 videoGame.display();
+screen.touched.value = false;
+screen.gyroscope.value = 61;
+playerView.display();
