@@ -1,41 +1,49 @@
 let {Signal, SignalComp, Adaptation, EMA, show} = require("../loader");
 
-let screen = {
-    gyroscope: new Signal(0),
-    rotate: function () {
-        show("Rotating");
+//Local activation
+Battery = {
+    name: "UMIDIGI",
+    charge: new Signal(100),
+    capacity: 5105,
+    printName: function() {
+        show(this.name);
+    },
+    graph: function() {
+        show("High Performance");
     }
 };
 
-let playerView = {
-    draw: function () {
-        show("Showing a Movie");
-    }
-};
-
-//adaptation
-let landscape = {
-    condition: "gyroLevel > 45",
-    enter: function () {
-        console.log("ENTER TRANSITION");
-        screen.rotate();
-    }
-};
+LowBatteryCondition = "level < 30"
+let LowBattery = EMA.layer({
+  condition: LowBatteryCondition,
+  enter: function() {
+    show("[LOW BATTERY] enter");
+},
+scope: function(funName, obj) {
+  return !(funName === "display" && obj === videoGame);
+}
+});
 
 
-EMA.exhibit(screen, {gyroLevel: screen.gyroscope});
+EMA.exhibit(Battery, {level: Battery.charge});
+EMA.addPartialMethod(LowBattery, Battery, "graph", function() {
+    show("Low Performance in " + this.name);
+    this.printName();
+});
 
-EMA.addPartialMethod(landscape, playerView, "draw",
-    function () {
-        Adaptation.proceed();
-        show("[LAYER] Landscape Mode");
-    }
-);
+battery = Object.create(Battery);
+battery2 = Object.create(Battery);
+battery2.name = "UMIDIGI_2"
 
 
-EMA.deploy(landscape);
-playerView.draw();
+battery.graph();
+battery.printName();
 
-show("\nChange SmartPhone position");
-screen.gyroscope.value = 60;
-playerView.draw();
+battery.charge.value = 20;
+EMA.activate(LowBatteryCondition);
+battery.graph();
+battery2.graph();
+EMA.deactivate(LowBatteryCondition);
+battery.graph();
+//EMA.activate(LowBatteryCondition, battery2);
+
