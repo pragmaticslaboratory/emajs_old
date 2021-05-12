@@ -26,24 +26,19 @@ function filterScope(f) {
     return stack.some(funName => f(funName));
 }
 
+function arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+  
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
 
 function Layer(adap) {
-
-    /*constructor(adap) {
-        this._cond = adap.condition === undefined ?
-            new SignalComp("false") : typeof (adap.condition) === "string" ?
-                new SignalComp(adap.condition) : adap.condition; //it should be already a signal composition
-
-        this._enter = adap.enter || emptyFunction;
-        this._exit = adap.exit || emptyFunction;
-        this._active = false;
-        this._name = adap.name || "_";
-        this._scope = adap.scope || false;
-        this.__original__ = adap;
-
-        this._variations = [];
-        this.enableCondition();
-    //}*/
 
     Object.defineProperty(this,'name', {
         set: function(name) {
@@ -59,21 +54,6 @@ function Layer(adap) {
             return this._cond;
         }
     });
-/*
-    set name(name) {
-        this._name = name;
-    }
-
-    get name() {
-        return this._name;
-    }
-
-
-    //This method is only used for debugging
-    get condition() {
-        return this._cond;
-    }
- */
 
     this.cleanCondition = function() { //this method is reused when you re-init the condition
         this._cond = new SignalComp(this._cond.expression);
@@ -85,32 +65,43 @@ function Layer(adap) {
 
     this._installVariations = function() {
         let thiz = this;
+        let entries = Object.entries(global)
         this._variations.forEach(function (variation) {
             let obj = variation[0];
+            let prototypeKeys = Object.keys(obj)
+            let objectInstances = []
+            entries.forEach(entry => {
+                let objectKeys = Object.keys(entry[1].__proto__)
+                if(arraysEqual(objectKeys, prototypeKeys))
+                    objectInstances.push(entry)
+            });
             let methodName = variation[1];
             let variationMethod = variation[2];
             let originalMethod = variation[3];
 
-            obj[methodName] = function () {
-                Layer.proceed = function () {
-                    return originalMethod.apply(obj, arguments);
+            objectInstances.forEach(instance => {
+                let object = instance[1]
+                object[methodName] = function () {
+                    Layer.proceed = function () {
+                        return originalMethod.apply(object, arguments);
+                    };
+    
+                    //magic!!!!
+                    Object.defineProperty(arguments.callee,"name",{get:function() {return methodName;}});
+    
+                    let result;
+                    //console.log(["MOSTRANDO STACK", getCallStack()]);
+                    if (typeof(thiz._scope) === "function" && !filterScope(thiz._scope)) {
+                        result = originalMethod.apply(object, arguments);
+                    } else {
+                        result = variationMethod.apply(object, arguments);
+                    }
+    
+                    Layer.proceed = undefined;
+                    return result;
                 };
-
-                //magic!!!!
-                Object.defineProperty(arguments.callee,"name",{get:function() {return methodName;}});
-
-                let result;
-                //console.log(["MOSTRANDO STACK", getCallStack()]);
-                if (typeof(thiz._scope) === "function" && !filterScope(thiz._scope)) {
-                    result = originalMethod.apply(obj, arguments);
-                } else {
-                    result = variationMethod.apply(obj, arguments);
-                }
-
-                Layer.proceed = undefined;
-                return result;
-            };
-        });
+            });
+            });
     };
 
     this._uninstallVariations = function() {
@@ -118,7 +109,13 @@ function Layer(adap) {
             let obj = variation[0];
             let methodName = variation[1];
             let originalMethod = variation[3];
-            obj[methodName] = originalMethod;
+            let prototypeKeys = Object.keys(obj);
+            let entries = Object.entries(global);
+            entries.forEach(entry => {
+                let objectKeys = Object.keys(entry[1].__proto__)
+                if(arraysEqual(objectKeys, prototypeKeys))
+                    entry[1][methodName] = originalMethod;
+            });
         });
     };
 
