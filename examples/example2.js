@@ -15,13 +15,13 @@ Battery = {
 
 LowBatteryCondition = "level < 30"
 let LowBattery = EMA.layer({
-  condition: LowBatteryCondition,
-  enter: function() {
-    show("[LOW BATTERY] enter");
-},
-scope: function(funName, obj) {
-  return !(funName === "display" && obj === videoGame);
-}
+    condition: LowBatteryCondition,
+    enter: function () {
+        show("[LOW BATTERY] enter");
+    },
+    exit: function() {
+        show("[LOW BATTERY] exit");
+    }
 });
 
 
@@ -44,6 +44,9 @@ EMA.activate(LowBatteryCondition);
 battery.graph();
 battery2.graph();
 EMA.deactivate(LowBatteryCondition);
+EMA.activate(LowBatteryCondition, battery2);
 battery.graph();
-//EMA.activate(LowBatteryCondition, battery2);
-
+battery2.graph();
+EMA.deactivate(LowBatteryCondition, battery2);
+battery.graph();
+battery2.graph();

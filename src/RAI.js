@@ -21,7 +21,7 @@ class RAI {
         let layer = new Layer(originalLayer);
         layer._name = layer._name !== "_" ? layer._name : "Layer_" + (this._layers.length + 1);
         this._layers.push(layer);
-        
+
         //it is to know if signals are already send data
         this._receiveSignalsForSignalInterfaces(layer);
         return layer
@@ -127,7 +127,7 @@ class RAI {
             return obj === tuple[0] && methodName === tuple[1];
         });
 
-        return found === undefined? undefined: found[2];
+        return found === undefined ? undefined : found[2];
     }
 
     getLayers(filter) {
@@ -166,12 +166,12 @@ class RAI {
     //Activation methods
     //Act just for one of the layers satisfying the condition, the others use the opposite action
     unique(condition) {
-        let layers = this._layers.filter(function(layer) {
+        let layers = this._layers.filter(function (layer) {
             return layer._cond._expression == condition
         });
         let valid = [], invalid = []
         layers.forEach(layer => {
-            if(layer.isActive())
+            if (layer.isActive())
                 valid.push(layer)
             else
                 invalid.push(layer)
@@ -181,7 +181,7 @@ class RAI {
 
     //Act on maximum one of the layers
     atMostOne(condition) {
-        let layers = this._layers.filter(function(layer) {
+        let layers = this._layers.filter(function (layer) {
             return layer._cond == condition && layer.isActive()
         });
         let len = Math.floor(Math.random() * (layers.length + 1))
@@ -190,16 +190,16 @@ class RAI {
 
     //Act on at least one layer
     atLeastOne(condition) {
-        let layers = this._layers.filter(function(layer) {
+        let layers = this._layers.filter(function (layer) {
             return layer._cond == condition && layer.isActive()
         });
         let split = Math.floor(Math.random() * (layers.length + 1));
         return [layers.slice(0, split), layers.slice(split)]
     }
-    
+
     //Act on all layers
     allOf(condition) {
-        return layers = this._layers.filter(function(layer) {
+        return layers = this._layers.filter(function (layer) {
             return layer._cond == condition && layer.isActive()
         });
     }
@@ -210,81 +210,42 @@ class RAI {
     }
 
     activate(layers, scope) {
-        if(scope) {
-            _scopedActivation(layers, scope);
-        } else {
-            if(Array.isArray(layers) && layers.length > 2) {
-                //allOf, between
-                for(const layer of layers) {
-                    layer._enter();
-                    layer._installVariations();
-                }
-            } else if(Array.isArray(layers) && layers.length == 2) {
-                //unique, atLeasOne
-                for(const layer in layers[0]) {
-                    layer._scope = 
-                    layer._enter();
-                    layer._installVariations();
-                }                    
-                for(const layer in layers[1]) {
-                    layer._exit();
-                    layer._uninstallVariations();
-                }
-            } else if(Array.isArray(layers) && layers.length == 1) {
-                //atMostone
-                layers[0]._enter();
-                layers[0]._installVariations();
-            } else {//condition 
-                let layer = this._layers.filter(function(layer) {
-                    return layer._cond._expression == layers
-                })
-                layer[0]._enter();
-                layer[0]._installVariations();
-            }
-        }
-    }
-
-    _scopedActivation(layers, scope) {
-        if(Array.isArray(layers) && layers.length > 2) {
+        if (Array.isArray(layers) && layers.length > 2) {
             //allOf, between
-            for(const layer of layers) {
+            for (const layer of layers) {
                 layer._enter();
-                layer._installVariations();
+                layer._installVariations(scope);
             }
-        } else if(Array.isArray(layers) && layers.length == 2) {
+        } else if (Array.isArray(layers) && layers.length == 2) {
             //unique, atLeasOne
-            for(const layer in layers[0]) {
-                layer._enter();
-                layer._installVariations();
-            }                    
-            for(const layer in layers[1]) {
-                layer._exit();
-                layer._uninstallVariations();
+            for (const layer in layers[0]) {
+                layer._scope =
+                    layer._enter();
+                layer._installVariations(scope);
             }
-        } else if(Array.isArray(layers) && layers.length == 1) {
+            for (const layer in layers[1]) {
+                layer._exit();
+                layer._uninstallVariations(scope);
+            }
+        } else if (Array.isArray(layers) && layers.length == 1) {
             //atMostone
             layers[0]._enter();
-            layers[0]._installVariations();
+            layers[0]._installVariations(scope);
         } else {//condition 
-            let layer = this._layers.filter(function(layer) {
+            let layer = this._layers.filter(function (layer) {
                 return layer._cond._expression == layers
             })
             layer[0]._enter();
-            layer[0]._installVariations();
+            layer[0]._installVariations(scope);
         }
     }
 
     deactivate(layers, scope) {
-        if(scope) {
-
-        } else {
-
-            let layer = this._layers.filter(function(layer) {
-                return layer._cond._expression == layers
-            })
-            layer[0]._exit();
-            layer[0]._uninstallVariations();
-        }
+        let layer = this._layers.filter(function (layer) {
+            return layer._cond._expression == layers
+        })
+        layer[0]._exit();
+        layer[0]._uninstallVariations(scope);
     }
 }
 
