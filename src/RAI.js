@@ -218,15 +218,14 @@ class RAI {
             }
         } else if (Array.isArray(layers) && layers.length == 2) {
             //unique, atLeasOne
-            for (const layer in layers[0]) {
-                layer._scope =
-                    layer._enter();
-                layer._installVariations(scope);
-            }
-            for (const layer in layers[1]) {
+            layers[0].forEach(layer => {
+                layer._enter();
+                layer._installUniqueVariations(scope);
+            })
+            layers[1].forEach(layer => {
                 layer._exit();
                 layer._uninstallVariations(scope);
-            }
+            })
         } else if (Array.isArray(layers) && layers.length == 1) {
             //atMostone
             layers[0]._enter();
@@ -241,11 +240,33 @@ class RAI {
     }
 
     deactivate(layers, scope) {
-        let layer = this._layers.filter(function (layer) {
-            return layer._cond._expression == layers
-        })
-        layer[0]._exit();
-        layer[0]._uninstallVariations(scope);
+        if (Array.isArray(layers) && layers.length > 2) {
+            //allOf, between
+            layers.forEach(layer => {
+                layer._exit();
+                layer._uninstallVariations(scope);
+            })
+        } else if (Array.isArray(layers) && layers.length == 2) {
+            //unique, atLeasOne
+            layers[0].forEach(layer => {
+                layer._exit();
+                layer._uninstallUniqueVariations(scope);
+            })
+            layers[1].forEach(layer => {
+                layer._exit();
+                layer._uninstallUniqueVariations(scope);
+            })
+        } else if (Array.isArray(layers) && layers.length == 1) {
+            //atMostone
+            layers[0]._exit();
+            layers[0]._uninstallVariations(scope);
+        } else {//condition 
+            let layer = this._layers.filter(function (layer) {
+                return layer._cond._expression == layers
+            })
+            layer[0]._exit();
+            layer[0]._uninstallVariations(scope);
+        }
     }
 }
 

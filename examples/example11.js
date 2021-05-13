@@ -1,115 +1,120 @@
 let {Signal, Adaptation, EMA, show} = require("../loader");
 const { activate } = require("../src/RAI");
 
-let screen = {
+Screen = {
     gyroscope: new Signal(0),
     touched: new Signal(false),
-    rotate: function () {
+    rotate: function() {
         show("Rotating");
     }
 };
 
-let playerView = {
-    display: function () {
+PlayerView = {
+    display: function() {
         show("Showing a Movie");
     }
-};
+}
 
 //this videoGame does not support landscape
-let videoGame = {
+VideoGame = {
     display: function() {
         show("Showing a Video Game");
     }
-};
+}
 
-//adaptation
+//adaptations
 LandscapeCondition = "gyroLevel > 45"
-let Landscape = {
+let Landscape = EMA.layer({
     condition:  LandscapeCondition,
     enter: function () {
-        console.log("ENTER TRANSITION");
+        console.log("ENTER LANDSCAPE TRANSITION");
         screen.rotate();
+    },
+    exit: function() {
+        show("LEAVING LANDSCAPE LAND")
     },
     scope: function(funName, obj) {
         return !(funName === "display" && obj === videoGame);
     }
-};
-EMA.deploy(Landscape);
+});
 
 PortraitCondition = "gyroLevel <= 45"
-let Portrait = {
+let Portrait = EMA.layer({
     condition:  PortraitCondition,
     enter: function () {
-        console.log("ENTER TRANSITION");
+        show("ENTER PORTRAIT TRANSITION");
         screen.rotate();
     },
     scope: function(funName, obj) {
         return !(funName === "display" && obj === videoGame);
     }
-};
-EMA.deploy(Portrait)
+});
 
 FixedCondition = "fixed"
-let KeepOrientation = {
+let KeepOrientation = EMA.layer({
     condition: FixedCondition,
     enter: function() {
-        console.log("FIXED OBJECT");
+        show("FIXED OBJECT");
+    },
+    exit: function() {
+        show("OBJECT NO LONGER FIXED");
     },
     scope: function(funName, obj) {
         return !(funName === "display" && obj === videoGame);
     }
-}
-EMA.deploy(KeepOrientation);
+});
 
-BetweenRange = ["gyroLevel > 45", "gyroLevel < 135"]
+EMA.exhibit(Screen, {gyroLevel: Screen.gyroscope});
+EMA.exhibit(Screen, {fixed: Screen.touched});
 
-EMA.exhibit(screen, {gyroLevel: screen.gyroscope});
-EMA.exhibit(screen, {fixed: screen.touched});
-
-EMA.addPartialMethod(Landscape, playerView, "display",
+EMA.addPartialMethod(Landscape, VideoGame, "display",
     function () {
-        show("[LAYER] Landscape Mode " + screen.gyroscope.value);
+        show("[HORIZONTAL] video game " + screen.gyroscope.value);
         Adaptation.proceed();
 
     }
 );
-EMA.addPartialMethod(Portrait, playerView, "display",
-    function () {
-        show("[VERTICAL] Portrait Mode " + screen.gyroscope.value);
+EMA.addPartialMethod(Portrait, VideoGame, "display",
+    function() {
+        show("[VERTICAL] video game ");
         Adaptation.proceed();
     }
 );
 
-EMA.addPartialMethod(Landscape, videoGame, "display",
-    function () {
-    show("[HORIZONTAL] Landscape Mode " + screen.gyroscope.value);
+EMA.addPartialMethod(Landscape, PlayerView, "display",
+    function() {
+        show("[HORIZONTAL] movie " + screen.gyroscope.value);
         Adaptation.proceed();
     }
 );
 
-EMA.addPartialMethod(Portrait, videoGame, "display",
-    function () {
-        show("[VERTICAL] Portrait Mode " + screen.gyroscope.value);
+EMA.addPartialMethod(Portrait, PlayerView, "display",
+    function() {
+        show("[VERTICAL] movie ");
         Adaptation.proceed();
     }
 );
 
-EMA.addPartialMethod(KeepOrientation, playerView, "display",
-    function () {
-        show("[LAYER] Nothing is moved");
+EMA.addPartialMethod(KeepOrientation, PlayerView, "display",
+    function() {
+        show("[FIXED] movie is moved");
         Adaptation.proceed();
     }
 );
 
-EMA.addPartialMethod(KeepOrientation, videoGame, "display",
-    function () {
-        show("[LAYER] Nothing is moved");
+EMA.addPartialMethod(KeepOrientation, VideoGame, "display",
+    function() {
+        show("[FIXED] game is NOT moved");
         Adaptation.proceed();
     }
 );
 
+videoGame = Object.create(VideoGame);
+playerView = Object.create(PlayerView);
+screen = Object.create(Screen);
 
 //Running the example
+
 playerView.display();
 
 show("\nChange SmartPhone position");
@@ -118,13 +123,18 @@ EMA.activate(LandscapeCondition);
 playerView.display();
 videoGame.display();
 screen.gyroscope.value = 10;
+EMA.deactivate(LandscapeCondition);
+EMA.activate(PortraitCondition);
 playerView.display();
 videoGame.display();
-EMA.activate(EMA.unique(FixedCondition), playerView)
 screen.touched.value = true;
+EMA.activate(EMA.unique(FixedCondition), playerView)
+playerView.display();
+videoGame.display();
 screen.gyroscope.value = 60;
+EMA.activate(LandscapeCondition);
 playerView.display();
 videoGame.display();
 screen.touched.value = false;
-screen.gyroscope.value = 61;
+EMA.deactivate(EMA.unique(FixedCondition), playerView)
 playerView.display();

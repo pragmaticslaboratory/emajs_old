@@ -63,6 +63,29 @@ function Layer(adap) {
         this._variations.push([obj, methodName, variation, originalMethod]);
     };
 
+    this._installUniqueVariations = function(scope) {
+        this._installVariations(scope);
+        this._variations.forEach(function (variation) {
+            let obj = scope || variation[0];
+            let objectInstances = []
+            if (scope) {
+                objectInstances.push(["scopeInstance", scope])
+            } else {
+                let entries = Object.entries(global)
+                let prototypeKeys = Object.keys(obj)
+                entries.forEach(entry => {
+                    let objectKeys = Object.keys(entry[1].__proto__)
+                    if (arraysEqual(objectKeys, prototypeKeys))
+                        objectInstances.push(entry)
+                });
+            }
+            objectInstances.forEach(instance => {
+                let object = instance[1];
+                Object.defineProperty(object, '__unique', { value: true, writable: false });
+            });
+        });
+    }
+
     this._installVariations = function (scope) {
         let thiz = this;
         this._variations.forEach(function (variation) {
@@ -84,28 +107,42 @@ function Layer(adap) {
             }
             objectInstances.forEach(instance => {
                 let object = instance[1]
-                object[methodName] = function () {
-                    Layer.proceed = function () {
-                        return originalMethod.apply(object, arguments);
+                if(!object.__unique) {
+                    object[methodName] = function () {
+                        Layer.proceed = function () {
+                            return originalMethod.apply(object, arguments);
+                        };
+
+                        //magic!!!!
+                        Object.defineProperty(arguments.callee, "name", { get: function () { return methodName; } });
+
+                        let result;
+                        //console.log(["MOSTRANDO STACK", getCallStack()]);
+                        if (typeof (thiz._scope) === "function" && !filterScope(thiz._scope)) {
+                            result = originalMethod.apply(object, arguments);
+                        } else {
+                            result = variationMethod.apply(object, arguments);
+                        }
+
+                        Layer.proceed = undefined;
+                        return result;
                     };
-
-                    //magic!!!!
-                    Object.defineProperty(arguments.callee, "name", { get: function () { return methodName; } });
-
-                    let result;
-                    //console.log(["MOSTRANDO STACK", getCallStack()]);
-                    if (typeof (thiz._scope) === "function" && !filterScope(thiz._scope)) {
-                        result = originalMethod.apply(object, arguments);
-                    } else {
-                        result = variationMethod.apply(object, arguments);
-                    }
-
-                    Layer.proceed = undefined;
-                    return result;
-                };
+                }
             });
         });
     };
+
+    this._uninstallUniqueVariations = function(scope) {
+        this._uninstallVariations(scope)
+        let obj = scope || variation[0];
+        let prototypeKeys = Object.keys(obj);
+        let entries = Object.entries(global);
+        entries.forEach(entry => {
+            let objectKeys = Object.keys(entry[1].__proto__)
+            if(arraysEqual(objectKeys, prototypeKeys))
+                delete entry[1]['__unique']
+        });
+    }
 
     this._uninstallVariations = function (scope) {
         this._variations.forEach(function (variation) {
