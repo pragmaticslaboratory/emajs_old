@@ -48,11 +48,11 @@ let InUse = {
 }
 
 let home = new Home()
-let room = home.rooms[1]
+let bedroom = home.rooms[1]
 
 EMA.exhibit(tv, {on: tv.state})
 
-EMA.addPartialMethod(InUse, Appliance, "playSound",
+/*EMA.addPartialMethod(InUse, Appliance, "playSound",
     function(_param) {
         show("not advertising with sound as is already in use")
     })
@@ -61,14 +61,15 @@ EMA.addPartialMethod(InUse, radio, "playSound",
     function(_param) {
         show("not advertising with sound as is already in use")
     })
-/*home.rooms.forEach(r => {
+*/
+
+home.rooms.forEach(r => {
     r.appliances.forEach( a => {
         EMA.addPartialMethod(InUse, a, "playSound",
         function(_param) {
             show("not advertising with sound as is already in use")
         })
 })})
-*/
 
 home.rooms.forEach( r => {
     EMA.exhibit(r, {occupied: r.users})
@@ -84,9 +85,8 @@ home.rooms.forEach( r => {
 EMA.addPartialMethod(Advertice, home, "doorBell", 
     function() {
         home.rooms.forEach( r => {
-            if(r.users.value > 0) {
-                r.playSound()
-            }})
+            r.playSound()
+        })
         //Adaptation.proceed()
     })
 
@@ -96,8 +96,9 @@ EMA.deploy(InUse)
 home.doorBell()
 
 console.log(" ")
-room.userEnter() //updates the signal
-home.doorBell()
+bedroom.userEnter() //updates the signal
+//home.doorBell()
+
 
 console.log(" ")
 tv.state.value = 1

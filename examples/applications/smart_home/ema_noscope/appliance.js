@@ -15,7 +15,7 @@ Appliance.prototype = {
     location: "",
     state: new Signal(0), //1 = on or 0 = off
     switch: function() {
-        this.state = !this.state
+        this.state.value = !this.state.value
     },
     setVolume: function(level) {
         this.volume = level
