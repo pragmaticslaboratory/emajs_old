@@ -17,10 +17,19 @@ class RAI {
         this._originalMethods = []; //object x name x original_method
     }
 
+    layer(originalLayer) {
+        let layer = new Layer(originalLayer);
+        layer._name = layer._name !== "_" ? layer._name : "Layer_" + (this._layers.length + 1);
+        this._layers.push(layer);
+
+        //it is to know if signals are already send data
+        this._receiveSignalsForSignalInterfaces(layer);
+        return layer
+    }
+
     deploy(originalLayer) {
         let layer = new Layer(originalLayer);
         layer._name = layer._name !== "_" ? layer._name : "Layer_" + (this._layers.length + 1);
-
         this._layers.push(layer);
         this._addSavedLayers(layer);
 
@@ -39,7 +48,7 @@ class RAI {
 
     _addSavedLayers(layer) {
         let variations = this._variations.filter(function (variation) {
-            return layer.__original__ === variation[0];
+            return layer === variation[0];
         });
         var thiz = this;
         variations.forEach(function (variation) {
@@ -67,8 +76,9 @@ class RAI {
         this._exhibitAnInterface(signalInterface);
     }
 
-    addPartialMethod(originalAdadp, obj, methodName, variation) {
-        this._variations.push([originalAdadp, obj, methodName, variation]);
+    addPartialMethod(layer, obj, methodName, variation) {
+        this._variations.push([layer, obj, methodName, variation]);
+        this._addSavedLayers(layer);
     }
 
     _receiveSignalsForSignalInterfaces(layer) {
@@ -117,7 +127,7 @@ class RAI {
             return obj === tuple[0] && methodName === tuple[1];
         });
 
-        return found === undefined? undefined: found[2];
+        return found === undefined ? undefined : found[2];
     }
 
     getLayers(filter) {
@@ -151,6 +161,112 @@ class RAI {
         });
 
         layer.cleanCondition();
+    }
+
+    //Activation methods
+    //Act just for one of the layers satisfying the condition, the others use the opposite action
+    unique(condition) {
+        let layers = this._layers.filter(function (layer) {
+            return layer._cond._expression == condition
+        });
+        let valid = [], invalid = []
+        layers.forEach(layer => {
+            if (layer.isActive())
+                valid.push(layer)
+            else
+                invalid.push(layer)
+        })
+        return [valid, invalid]
+    }
+
+    //Act on maximum one of the layers
+    atMostOne(condition) {
+        let layers = this._layers.filter(function (layer) {
+            return layer._cond == condition && layer.isActive()
+        });
+        let len = Math.floor(Math.random() * (layers.length + 1))
+        return layers[len]
+    }
+
+    //Act on at least one layer
+    atLeastOne(condition) {
+        let layers = this._layers.filter(function (layer) {
+            return layer._cond == condition && layer.isActive()
+        });
+        let split = Math.floor(Math.random() * (layers.length + 1));
+        return [layers.slice(0, split), layers.slice(split)]
+    }
+
+    //Act on all layers
+    allOf(condition) {
+        return layers = this._layers.filter(function (layer) {
+            return layer._cond == condition && layer.isActive()
+        });
+    }
+
+    //Act for layers satisfying conditions within the range
+    between(lower, higer) {
+
+    }
+
+    scope(layers, scope) {
+        if (Array.isArray(layers) && layers.length > 2) {
+            //allOf, between
+            for (const layer of layers) {
+                layer._enter();
+                layer._installVariations(scope);
+            }
+        } else if (Array.isArray(layers) && layers.length == 2) {
+            //unique, atLeasOne
+            layers[0].forEach(layer => {
+                layer._enter();
+                layer._installUniqueVariations(scope);
+            })
+            layers[1].forEach(layer => {
+                layer._exit();
+                layer._uninstallVariations(scope);
+            })
+        } else if (Array.isArray(layers) && layers.length == 1) {
+            //atMostone
+            layers[0]._enter();
+            layers[0]._installVariations(scope);
+        } else {//condition 
+            let layer = this._layers.filter(function (layer) {
+                return layer._cond._expression == layers
+            })
+            layer[0]._enter();
+            layer[0]._installVariations(scope);
+        }
+    }
+
+    remove(layers, scope) {
+        if (Array.isArray(layers) && layers.length > 2) {
+            //allOf, between
+            layers.forEach(layer => {
+                layer._exit();
+                layer._uninstallVariations(scope);
+            })
+        } else if (Array.isArray(layers) && layers.length == 2) {
+            //unique, atLeasOne
+            layers[0].forEach(layer => {
+                layer._exit();
+                layer._uninstallUniqueVariations(scope);
+            })
+            layers[1].forEach(layer => {
+                layer._exit();
+                layer._uninstallUniqueVariations(scope);
+            })
+        } else if (Array.isArray(layers) && layers.length == 1) {
+            //atMostone
+            layers[0]._exit();
+            layers[0]._uninstallVariations(scope);
+        } else {//condition 
+            let layer = this._layers.filter(function (layer) {
+                return layer._cond._expression == layers
+            })
+            layer[0]._exit();
+            layer[0]._uninstallVariations(scope);
+        }
     }
 }
 
