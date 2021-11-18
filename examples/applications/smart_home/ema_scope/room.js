@@ -6,7 +6,10 @@ Room = {
     users: new Signal(0),
     userEnter: function() {
         this.users.value += 1
-    }, playSound: function() {},
+    }, playSound: function() {
+
+        console.log(`mierdita from ${this.name}`)
+    },
     userExit: function() {
         this.users.value = Math.max(0, this.users.value - 1)        
     },

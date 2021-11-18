@@ -93,8 +93,8 @@ function Layer(adap) {
             let variationMethod = variation[2];
             let originalMethod = variation[3];
             let objectInstances = []
-            if (scope) {
-                objectInstances.push(["scopeInstance", scope])
+            /*if (scope) {
+                //objectInstances.push(["scopeInstance", scope])
             } else {
                 let entries = Object.entries(global)
                 let prototypeKeys = Object.keys(obj)
@@ -103,7 +103,30 @@ function Layer(adap) {
                     if (arraysEqual(objectKeys, prototypeKeys))
                         objectInstances.push(entry)
                 });
+            }*/
+            if(!obj.__unique) {
+                obj[methodName] = function () {
+                    Layer.proceed = function () {
+                        return originalMethod.apply(obj, arguments);
+                    };
+
+                    //magic!!!!
+                    Object.defineProperty(arguments.callee, "name", { get: function () { return methodName; } });
+
+                    let result;
+                    //console.log(["MOSTRANDO STACK", getCallStack()]);
+                    if (typeof (thiz._scope) === "function" && !filterScope(thiz._scope)) {
+                        result = originalMethod.apply(obj, arguments);
+                    } else {
+                        result = variationMethod.apply(obj, arguments);
+                    }
+
+                    //Layer.proceed = undefined;
+                    return result;
+                };
             }
+            //});
+            /*
             objectInstances.forEach(instance => {
                 let object = instance[1]
                 if(!object.__unique) {
@@ -127,7 +150,7 @@ function Layer(adap) {
                         return result;
                     };
                 }
-            });
+            });*/
         });
     };
 
