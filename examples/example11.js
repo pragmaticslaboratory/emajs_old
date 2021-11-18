@@ -1,5 +1,5 @@
 let {Signal, Adaptation, EMA, show} = require("../loader");
-const { activate } = require("../src/RAI");
+const { scope } = require("../src/RAI");
 
 Screen = {
     gyroscope: new Signal(0),
@@ -13,14 +13,14 @@ PlayerView = {
     display: function() {
         show("Showing a Movie");
     }
-}
+};
 
 //this videoGame does not support landscape
 VideoGame = {
     display: function() {
         show("Showing a Video Game");
     }
-}
+};
 
 //adaptations
 LandscapeCondition = "gyroLevel > 45"
@@ -119,22 +119,22 @@ playerView.display();
 
 show("\nChange SmartPhone position");
 screen.gyroscope.value = 60;
-EMA.activate(LandscapeCondition);
+EMA.scope(LandscapeCondition);
 playerView.display();
 videoGame.display();
 screen.gyroscope.value = 10;
-EMA.deactivate(LandscapeCondition);
-EMA.activate(PortraitCondition);
+EMA.remove(LandscapeCondition);
+EMA.scope(PortraitCondition);
 playerView.display();
 videoGame.display();
 screen.touched.value = true;
-EMA.activate(EMA.unique(FixedCondition), playerView)
+EMA.scope(EMA.unique(FixedCondition), playerView)
 playerView.display();
 videoGame.display();
 screen.gyroscope.value = 60;
-EMA.activate(LandscapeCondition);
+EMA.scope(LandscapeCondition);
 playerView.display();
 videoGame.display();
 screen.touched.value = false;
-EMA.deactivate(EMA.unique(FixedCondition), playerView)
+EMA.scope(EMA.unique(FixedCondition), playerView)
 playerView.display();

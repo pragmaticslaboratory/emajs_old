@@ -39,7 +39,6 @@ function arraysEqual(a, b) {
 
 
 function Layer(adap) {
-
     Object.defineProperty(this, 'name', {
         set: function (name) {
             this._name = name;

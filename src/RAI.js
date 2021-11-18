@@ -209,13 +209,13 @@ class RAI {
 
     }
 
-    activate(layers, scope) {
+    scope(layers, scope) {
         if (Array.isArray(layers) && layers.length > 2) {
             //allOf, between
-            for (const layer of layers) {
+            layers.forEach(layer => {
                 layer._enter();
                 layer._installVariations(scope);
-            }
+            });
         } else if (Array.isArray(layers) && layers.length == 2) {
             //unique, atLeasOne
             layers[0].forEach(layer => {
@@ -239,7 +239,7 @@ class RAI {
         }
     }
 
-    deactivate(layers, scope) {
+    remove(layers, scope) {
         if (Array.isArray(layers) && layers.length > 2) {
             //allOf, between
             layers.forEach(layer => {
